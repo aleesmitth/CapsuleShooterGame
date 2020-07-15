@@ -27,7 +27,12 @@ sysinfo.txt
 *.user
 *.userprefs
 *.pidb
-.DS_Store
+.DS_Storesysinfo.txt
+sysinfo.txt
+.hg
+.git
+ .vs
+*.DS_store
 
 ###
 # OS generated
