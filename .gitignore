@@ -1,6 +1,7 @@
 ###
 # Unity folders and files
 ###
+IGNORAR
 [Aa]ssets/AssetStoreTools*
 [Bb]uild/
 [Ll]ibrary/
@@ -46,6 +47,9 @@ Icon?
 ehthumbs.db
 Thumbs.db
 
+#sketch scripts
+Project/Assets/Scripts/MovimJugador.*
+Project/Assets/Scripts/BouncyMov.*
 
 
 # Common IntelliJ Platform excludes

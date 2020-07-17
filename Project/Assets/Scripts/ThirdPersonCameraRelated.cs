@@ -102,8 +102,8 @@ public class ThirdPersonCameraRelated : MonoBehaviour {
     }
 
     private bool RelevantKeyIsPressed() {
-        return Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.S) ||
-               Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.Space);
+        return Input.GetKey(KeyCode.W) /*|| Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.S) ||       solo reseteo la direccion del player si toca la W o dispara
+               Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.Space)*/;
     }
 
     private void EnableFreeLook() {
