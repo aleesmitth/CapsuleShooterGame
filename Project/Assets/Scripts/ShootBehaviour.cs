@@ -12,7 +12,7 @@ public class ShootBehaviour : MonoBehaviour {
     public Transform bulletSpawnTransform;
     //public GameObject bulletPrefab;
     //public float bulletImpulse;
-    public GameObject impactEffect;
+    //todo si no uso pool necesito esto public GameObject impactEffect;
     public float delayBetweenShots;
     public bool canShoot;
 
@@ -46,14 +46,20 @@ public class ShootBehaviour : MonoBehaviour {
         RaycastHit raycastHitInfo;
         /* el range es opcional, se puede sacar el parametro y anda igual*/
         if (Physics.Raycast(bulletSpawnTransform.position, bulletSpawnTransform.forward, out raycastHitInfo, range)) {
-            Debug.Log(raycastHitInfo.transform.name); //debug code, sacarlo despues
-            
             // aca puedo tomar al objeto que le pegue con raycastHitInfo.transform.getComponent o algo asi, y puedo directamente acceder al script de vida y restarsela.
             // osea creo un auxiliar para atrapar stats, Stats stats = raycastHitInfo.transform.getComponent<Stats>();
             // stats.perderVida();
-            GameObject impactGameObject = Instantiate(impactEffect, raycastHitInfo.point, Quaternion.LookRotation(raycastHitInfo.normal));
+            GameObject impactGameObject = poolOfGameObjects.Instance.GetPartycle();
+            impactGameObject.transform.position = raycastHitInfo.point;
+            impactGameObject.transform.rotation = Quaternion.LookRotation(raycastHitInfo.normal);
+            impactGameObject.SetActive(true);
             var impactMainModule = impactGameObject.GetComponent<ParticleSystem>().main;
-            Destroy(impactGameObject, impactMainModule.duration);
+            poolOfGameObjects.Instance.AddToPool(impactGameObject, (int)impactMainModule.duration);
+            
+            //todo esto es sin pool
+            //todo GameObject impactGameObject = Instantiate(impactEffect, raycastHitInfo.point, Quaternion.LookRotation(raycastHitInfo.normal));
+            //todo var impactMainModule = impactGameObject.GetComponent<ParticleSystem>().main;
+            //todo Destroy(impactGameObject, impactMainModule.duration);
         }
         canShoot = false;
         StartCoroutine(ShootDelay());

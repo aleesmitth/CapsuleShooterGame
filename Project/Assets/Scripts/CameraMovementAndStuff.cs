@@ -1,55 +1,118 @@
 ﻿using System;
+using System.Collections;
 using UnityEngine;
 using Cinemachine;
 using UnityEngine.Serialization;
 
 /*this file shouldnt be in a camera, it should be a game master of some kind*/
 
-public class ThirdPersonCameraRelated : MonoBehaviour {
-    public new CinemachineFreeLook camera;
-    public CinemachineFreeLook freeLookCamera;
+public class CameraMovementAndStuff : MonoBehaviour {
+    public CinemachineFreeLook fixedThirdPersonCamera;
+    public CinemachineFreeLook freeLookThirdPersonCamera;
+    public CinemachineVirtualCamera firstPersonCamera;
     public Transform transformMainCamera;
     public Transform transformPlayer;
     public Transform transformGun;
     
-    private Transform _transformCamera;
+    private Transform _transformThirdPersonCamera;
     private Transform _transformFreeLookCamera;
-    private readonly int FIRST_PRIORITY = 10;
-    private readonly int SECOND_PRIORITY = 9;// tiene q ser menor q la primera
+    private Transform _transformFirstPersonCamera;
+    private readonly int FIRST_PRIORITY = 1;
+    private readonly int NO_PRIORITY = 0;// tiene q ser menor q la primera
 
     private void Awake() {
-        _transformCamera = camera.transform;
-        _transformFreeLookCamera = freeLookCamera.transform;
+        _transformThirdPersonCamera = fixedThirdPersonCamera.transform;
+        _transformFreeLookCamera = freeLookThirdPersonCamera.transform;
+        _transformFirstPersonCamera = firstPersonCamera.transform;
     }
 
     // Update is called once per frame
     private void Update() {
-        HandleMouseClickCamMov();
-        HandleKeyboardCamMov(); //not fully working, idk how to get the keyboard to control the cam rotation
-        HandleZoom();
-        if (CinemachineCore.Instance.IsLive(camera)) {
-            UpdateCharacterDirection(_transformCamera);
+        VerifyTypeOfCameraRequested();
+        if (!CinemachineCore.Instance.IsLive(firstPersonCamera)) {
+            HandleMouseClickCamMov();
+            HandleKeyboardCamMov(); //not fully working, idk how to get the keyboard to control the cam rotation
+            HandleZoom();
+            if (CinemachineCore.Instance.IsLive(fixedThirdPersonCamera)) {
+                UpdateCharacterDirection(_transformThirdPersonCamera.position);
+            }
+        }
+        else {
+            HandleMouseMovementFirstPerson();
+        }
+
+
+
+
+    }
+    // hay un bug que me molesta, hace que cuando cambio de first a third person, como el arma esta
+    // adelante del player, la camara de third se pone del lado de adelante del player, y me invierte a donde
+    // estaba mirando el player cuando estaba en first
+    
+    // lo arregle y no se como... creo q distintas referencias de transform, o gun NI IDEA.
+    private void VerifyTypeOfCameraRequested() {
+        // si toco la c y no esta ni la first person ni la fixed third person activas, returnea (esto es para q no me
+        // rompa tod.o cuando toco la c y estoy en freelook)
+        
+        if ((!Input.GetKeyUp(KeyCode.C) || !CinemachineCore.Instance.IsLive(firstPersonCamera)) &&
+            (!Input.GetKeyUp(KeyCode.C) || !CinemachineCore.Instance.IsLive(fixedThirdPersonCamera))) return;
+        var aux = fixedThirdPersonCamera.m_Priority;
+        fixedThirdPersonCamera.m_Priority = firstPersonCamera.m_Priority;
+        firstPersonCamera.m_Priority = aux;
+        centrarCamara();
+    }
+
+    private void centrarCamara() {
+        ModificarRecentering(true);
+        // forma villera de recentrar mi camara, a veces anda a veces no porque el tiempo para el fixed update es muy corto
+        // es horrible esto, pero cinemachine recenter esta bugeado.
+        StartCoroutine(WaitOneSecondAndDeactivateRecentering());
+    }
+
+    private IEnumerator WaitOneSecondAndDeactivateRecentering() {
+        yield return new WaitForFixedUpdate();
+        ModificarRecentering(false);
+    }
+
+    private void HandleMouseMovementFirstPerson() {
+        UpdateCharacterDirectionFirstPerson();
+    }
+
+    private void UpdateCharacterDirectionFirstPerson() {
+        // do something
+        if (!Physics.Raycast(transformMainCamera.position, transformMainCamera.forward, out var raycastHit)) return;
+        
+        var directionPlayer = raycastHit.point - transformPlayer.position;
+        var gunDirection = directionPlayer;
+        directionPlayer.y = 0;
+        transformPlayer.rotation = Quaternion.LookRotation(directionPlayer, Vector3.up);
+        UpdateGunDirectionFirstPerson();
+    }
+
+    private void UpdateGunDirectionFirstPerson() {
+        if (Physics.Raycast(transformMainCamera.position, transformMainCamera.forward, out var raycastHit)) {
+            transformGun.rotation = Quaternion.LookRotation(raycastHit.point - transformGun.position, Vector3.up);
         }
     }
     /*toda la implementacion podria estar mucho mejor con un diccionario o una lista pero fue*/
 
     private void HandleZoom() {
-        if (Input.GetAxis("Mouse ScrollWheel") > 0f && camera.m_Lens.FieldOfView > 30f) {
-            camera.m_Lens.FieldOfView -= 1;
+        if (Input.GetAxis("Mouse ScrollWheel") > 0f && fixedThirdPersonCamera.m_Lens.FieldOfView > 30f) {
+            fixedThirdPersonCamera.m_Lens.FieldOfView -= 1;
         }
-        else if (Input.GetAxis("Mouse ScrollWheel") < 0f && camera.m_Lens.FieldOfView < 60f) {
-            camera.m_Lens.FieldOfView += 1;
+        else if (Input.GetAxis("Mouse ScrollWheel") < 0f && fixedThirdPersonCamera.m_Lens.FieldOfView < 60f) {
+            fixedThirdPersonCamera.m_Lens.FieldOfView += 1;
         }
 
         if (!Input.GetMouseButton(1)) return;
-        if (Input.GetAxis("Mouse ScrollWheel") > 0f && freeLookCamera.m_Lens.FieldOfView > 30f) {
-            freeLookCamera.m_Lens.FieldOfView -= 1;
+        if (Input.GetAxis("Mouse ScrollWheel") > 0f && freeLookThirdPersonCamera.m_Lens.FieldOfView > 30f) {
+            freeLookThirdPersonCamera.m_Lens.FieldOfView -= 1;
         }
-        else if (Input.GetAxis("Mouse ScrollWheel") < 0f && freeLookCamera.m_Lens.FieldOfView < 60f) {
-            freeLookCamera.m_Lens.FieldOfView += 1;
+        else if (Input.GetAxis("Mouse ScrollWheel") < 0f && freeLookThirdPersonCamera.m_Lens.FieldOfView < 60f) {
+            freeLookThirdPersonCamera.m_Lens.FieldOfView += 1;
         }
     }
-
+    
     private void HandleKeyboardCamMov() {
         /*if (Input.GetKeyDown(KeyCode.Q)) {
             RotateCameraLeft();
@@ -68,10 +131,10 @@ public class ThirdPersonCameraRelated : MonoBehaviour {
     }
 
     private void ModificarRecentering(bool recenterBool) {
-        camera.m_YAxisRecentering.m_enabled = recenterBool;
-        camera.m_RecenterToTargetHeading.m_enabled = recenterBool;
-        freeLookCamera.m_YAxisRecentering.m_enabled = recenterBool;
-        freeLookCamera.m_RecenterToTargetHeading.m_enabled = recenterBool;
+        fixedThirdPersonCamera.m_YAxisRecentering.m_enabled = recenterBool;
+        fixedThirdPersonCamera.m_RecenterToTargetHeading.m_enabled = recenterBool;
+        freeLookThirdPersonCamera.m_YAxisRecentering.m_enabled = recenterBool;
+        freeLookThirdPersonCamera.m_RecenterToTargetHeading.m_enabled = recenterBool;
     }
 
     private void RotateCameraRight() {
@@ -89,7 +152,7 @@ public class ThirdPersonCameraRelated : MonoBehaviour {
         }
 
         if (Input.GetMouseButton(1) && RelevantKeyIsPressed()) {
-            UpdateCharacterDirection(_transformFreeLookCamera);
+            UpdateCharacterDirection(_transformFreeLookCamera.position);
         }
 
         if (Input.GetMouseButton(1) && Input.GetMouseButtonDown(0)) {
@@ -111,19 +174,19 @@ public class ThirdPersonCameraRelated : MonoBehaviour {
         //freeLook.m_RecenterToTargetHeading.m_enabled = true;
         
         /*actualizo el zoom*/
-        freeLookCamera.m_Lens.FieldOfView = camera.m_Lens.FieldOfView;
+        freeLookThirdPersonCamera.m_Lens.FieldOfView = fixedThirdPersonCamera.m_Lens.FieldOfView;
         /*intercambio prioridad*/
-        freeLookCamera.m_Priority = FIRST_PRIORITY;
-        camera.m_Priority = SECOND_PRIORITY;
+        freeLookThirdPersonCamera.m_Priority = FIRST_PRIORITY;
+        fixedThirdPersonCamera.m_Priority = NO_PRIORITY;
         //freeLook.GetRig(1).GetCinemachineComponent<CinemachineTransposer>().m_ZDamping = 5;
     }
 
     private void DisableFreeLook() {
         /*actualizo el zoom*/
-        camera.m_Lens.FieldOfView = freeLookCamera.m_Lens.FieldOfView;
+        fixedThirdPersonCamera.m_Lens.FieldOfView = freeLookThirdPersonCamera.m_Lens.FieldOfView;
         /*intercambio prioridad*/
-        camera.m_Priority = FIRST_PRIORITY;
-        freeLookCamera.m_Priority = SECOND_PRIORITY;
+        fixedThirdPersonCamera.m_Priority = FIRST_PRIORITY;
+        freeLookThirdPersonCamera.m_Priority = NO_PRIORITY;
     }
     
     
@@ -153,9 +216,9 @@ public class ThirdPersonCameraRelated : MonoBehaviour {
     }*/
 
     /*lo interesate: resta de vectores, posCam y posPlayer, el resultado es a donde tiene q mirar el jugador (SOLO EJES X, Z)*/
-    private void UpdateCharacterDirection(Transform transformCamera) {
+    private void UpdateCharacterDirection(Vector3 positionCamera) {
         /*hago direccion en sentido contraria a la camara*/
-        var direction = transformPlayer.position - transformCamera.position;
+        var direction = transformPlayer.position - positionCamera;
         direction.y = 0;
         /*transformo direccion en rotacion*/
         Quaternion rotation = Quaternion.LookRotation(direction, Vector3.up);
@@ -192,7 +255,7 @@ public class ThirdPersonCameraRelated : MonoBehaviour {
         if (Physics.Raycast(positionMainCamera, transformMainCamera.forward, out var raycastHit, layerMask) &&
             NoEsUnBugConLaCamara(raycastHit)) {
             /*muy importante usar point y no position porque me devuelve el centro del objeto que golpeo*/
-            transformGun.rotation = Quaternion.LookRotation(raycastHit.point - transformGun.position);
+            transformGun.rotation = Quaternion.LookRotation(raycastHit.point - transformGun.position, Vector3.up);
         }
 
         /*

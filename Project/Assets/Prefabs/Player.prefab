@@ -5214,6 +5214,7 @@ GameObject:
   - component: {fileID: 5075634781928429825}
   - component: {fileID: 5075634781928429831}
   - component: {fileID: 5075634781928429828}
+  - component: {fileID: 1078032604573355677}
   - component: {fileID: 5075634781928429824}
   - component: {fileID: 5075634781928429830}
   m_Layer: 0
@@ -5269,12 +5270,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   muzzleFlash: {fileID: 292603317}
   bulletSpawnTransform: {fileID: 5075634782588363482}
-  bulletPrefab: {fileID: 3060750774904330903, guid: 3db994c120620cb479360b2fb0ad054f,
-    type: 3}
-  bulletImpulse: 150
   delayBetweenShots: 0.15
   canShoot: 1
   range: 100
+--- !u!114 &1078032604573355677
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5075634781928429829}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e776c42c51b5084f8b4ed264fdad2cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 1337198075554910, guid: 25c7aa9ad705fe143a4d71c1c8deb7d4, type: 3}
 --- !u!54 &5075634781928429824
 Rigidbody:
   m_ObjectHideFlags: 0
